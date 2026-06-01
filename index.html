@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>風險計算器（GitHub Pages 版）</title>
+  <style>
+    :root {
+      --primary: #007AFF;
+      --bg: #F2F2F7;
+      --card-bg: #FFFFFF;
+      --text: #1C1C1E;
+      --text-secondary: #8E8E93;
+      --border: #E5E5EA;
+      --success: #34C759;
+      --success-light: #32ADE6;
+      --danger: #FF3B30;
+      --hk-color: #E02020;
+      --us-color: #007AFF;
+      --warn-bg: #eef6ff;
+      --warn-text: #114a9f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 14px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .container { max-width: 680px; margin: 0 auto; }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      margin: 8px 0 12px;
+      font-weight: 700;
+    }
+
+    .note {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border: 1px solid #cfe2ff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 12px;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .market-switch {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 12px;
+      background: #E4E4E4;
+      border-radius: 20px;
+      padding: 2px;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .market-btn {
+      padding: 8px 20px;
+      border-radius: 18px;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .market-btn.active.hk {
+      background: #fff;
+      color: var(--hk-color);
+      box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    }
+
+    .market-btn.active.us {
+      background: #fff;
+      color: var(--us-color);
+      box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    }
+
+    .tabs {
+      display: flex;
+      background: #E4E4E4;
+      border-radius: 10px;
+      padding: 2px;
+      margin-bottom: 12px;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      line-height: 1.25;
+    }
+
+    .tab.active {
+      background: #fff;
+      color: var(--text);
+      box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.05);
+      margin-bottom: 12px;
+    }
+
+    .input-group { margin-bottom: 12px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 18px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]:focus { border-color: var(--primary); }
+
+    .adjust-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .adjust-btn {
+      flex: 1;
+      min-width: 76px;
+      padding: 8px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #222;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-row:last-child { border-bottom: none; }
+
+    .result-label { font-size: 15px; color: var(--text-secondary); }
+
+    .result-value-group {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .result-value {
+      font-size: 18px;
+      font-weight: 600;
+      font-family: "SF Mono", "Menlo", monospace;
+      word-break: break-word;
+    }
+
+    .result-sub-value {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      font-family: "SF Mono", "Menlo", monospace;
+      font-weight: 500;
+    }
+
+    .highlight { font-size: 22px; color: var(--primary); }
+    .danger { color: var(--danger); }
+    .success { color: var(--success); }
+    .success-light { color: var(--success-light); }
+
+    .hidden { display: none !important; }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button.btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #ececec;
+      color: #222;
+    }
+
+    .btn.primary { background: var(--primary); color: #fff; }
+    .btn.danger-soft { background: #fff1f0; color: var(--danger); }
+
+    .status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      min-height: 18px;
+      line-height: 1.3;
+    }
+
+    .history-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .history-empty {
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      color: var(--text-secondary);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .history-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .history-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .history-time {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #f3f3f3;
+      color: #555;
+      margin-right: 6px;
+    }
+    .tag.hk { background: #fff0f0; color: var(--hk-color); }
+    .tag.us { background: #eef5ff; color: var(--us-color); }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+    }
+
+    .history-kv {
+      font-size: 12px;
+      color: #4b4b4b;
+    }
+
+    .history-kv strong {
+      font-family: "SF Mono", "Menlo", monospace;
+      color: #111;
+    }
+
+    .history-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 999;
+      padding: 0;
+    }
+
+    .modal.show { display: flex; }
+
+    .sheet {
+      width: 100%;
+      max-width: 680px;
+      background: #fff;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      padding: 12px;
+      max-height: 78vh;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sheet-title { font-weight: 700; font-size: 16px; }
+    .sheet-tip { font-size: 12px; color: var(--text-secondary); }
+
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      max-height: 50vh;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #111;
+      outline: none;
+    }
+
+    .currency-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #eee;
+      color: #666;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    @media (max-width: 520px) {
+      .history-grid { grid-template-columns: 1fr; }
+      .result-value { font-size: 16px; }
+      .highlight { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>風險計算器</h1>
+
+    <div class="note">
+      ✅ 呢個版本適合 GitHub Pages。資料會自動保存到瀏覽器 localStorage。<br>
+      建議仍定期用「備份 JSON」作雙重備份。
+    </div>
+
+    <div class="market-switch">
+      <button class="market-btn active hk" id="btn-hk" onclick="switchMarket('hk')">港股 (HK)</button>
+      <button class="market-btn us" id="btn-us" onclick="switchMarket('us')">美股 (US)</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" id="tab-shares" onclick="switchMode('calcShares')">
+        計算股數<br><span style="font-size:10px;opacity:.7">固定虧損金額</span>
+      </div>
+      <div class="tab" id="tab-risk" onclick="switchMode('calcRisk')">
+        計算風險<br><span style="font-size:10px;opacity:.7">固定持倉股數</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="input-group">
+        <label id="lbl-entry">買入價格 (Entry)</label>
+        <input type="number" id="entryPrice" placeholder="0.00" inputmode="decimal" step="0.01" />
+      </div>
+
+      <div class="input-group">
+        <label id="lbl-stop">止損價格 (Stop Loss)</label>
+        <input type="number" id="stopLoss" placeholder="0.00" inputmode="decimal" step="0.01" />
+      </div>
+
+      <div id="input-risk-amount" class="input-group">
+        <label id="lbl-risk">最大虧損金額 (Risk)</label>
+        <input type="number" id="riskAmount" placeholder="例如: 1000" inputmode="decimal" />
+        <div class="adjust-btns">
+          <button class="adjust-btn" onclick="setRisk(15000)">15000</button>
+          <button class="adjust-btn" onclick="setRisk(20000)">20000</button>
+          <button class="adjust-btn" onclick="setRisk(25000)">25000</button>
+          <button class="adjust-btn" onclick="setRisk(30000)">30000</button>
+        </div>
+      </div>
+
+      <div id="input-shares-count" class="input-group hidden">
+        <label>持有股數 (Shares)</label>
+        <input type="number" id="sharesInput" placeholder="例如: 1000" inputmode="numeric" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="result-shares-section">
+        <div class="result-row">
+          <span class="result-label">建議買入股數</span>
+          <span class="result-value highlight" id="suggestedShares">0</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">實際總成本</span>
+          <div class="result-value-group">
+            <span class="result-value" id="totalCostA">0.00</span>
+            <span class="result-sub-value hidden" id="totalCostA_HKD"></span>
+          </div>
+        </div>
+        <div class="result-row">
+          <span class="result-label">實際風險金額</span>
+          <div class="result-value-group">
+            <span class="result-value danger" id="actualRiskA">0.00</span>
+            <span class="result-sub-value hidden" id="actualRiskA_HKD"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="result-risk-section" class="hidden">
+        <div class="result-row">
+          <span class="result-label">預計虧損金額</span>
+          <div class="result-value-group">
+            <span class="result-value danger highlight" id="projectedLoss">0.00</span>
+            <span class="result-sub-value hidden" id="projectedLoss_HKD"></span>
+          </div>
+        </div>
+        <div class="result-row">
+          <span class="result-label">總投入成本</span>
+          <div class="result-value-group">
+            <span class="result-value" id="totalCostB">0.00</span>
+            <span class="result-sub-value hidden" id="totalCostB_HKD"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-row">
+        <span class="result-label">止損幅度 (Stop %)</span>
+        <span class="result-value" id="stopLossPercentDisplay">0.00%</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">目標價 (1:1)</span>
+        <span class="result-value success-light" id="targetPrice1">0.00</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">目標價 (1:2)</span>
+        <span class="result-value success" id="targetPrice2">0.00</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn primary" onclick="saveCurrentRecord()">儲存目前計算</button>
+        <button class="btn" onclick="clearInputs()">清空輸入</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="openBackupExport()">備份 JSON（匯出）</button>
+        <button class="btn" onclick="openBackupImport()">貼上 JSON（匯入）</button>
+      </div>
+
+      <div class="status" id="statusText">準備完成</div>
+    </div>
+
+    <div class="card">
+      <div class="history-title">
+        <strong>📒 計算紀錄</strong>
+        <button class="btn danger-soft" onclick="clearHistory()">清除全部</button>
+      </div>
+      <div id="historyList" class="history-list">
+        <div class="history-empty">暫無紀錄</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="backupModal">
+    <div class="sheet">
+      <div class="sheet-title" id="backupTitle">備份 JSON</div>
+      <div class="sheet-tip" id="backupTip">可複製到備忘錄/檔案，下次貼上匯入。</div>
+      <textarea id="backupText" placeholder='請貼上 JSON，然後按「套用匯入」'></textarea>
+      <div class="btn-row">
+        <button class="btn primary" id="copyBtn" onclick="copyBackupText()">複製文字</button>
+        <button class="btn primary hidden" id="applyImportBtn" onclick="applyImport()">套用匯入</button>
+        <button class="btn" onclick="downloadBackupFile()">下載 JSON 檔</button>
+        <button class="btn" onclick="selectBackupText()">全選文字</button>
+        <button class="btn" onclick="closeBackupModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========= 持久化設定 =========
+    const STORAGE_KEY = 'risk_calculator_v1';
+    const HKD_RATE = 7.8;
+
+    // ========= 狀態 =========
+    let currentMarket = 'hk';
+    let currentMode = 'calcShares';
+    let historyRecords = [];
+    let backupMode = 'export'; // export | import
+
+    // ========= DOM =========
+    const entryPriceInput = document.getElementById('entryPrice');
+    const stopLossInput = document.getElementById('stopLoss');
+    const riskAmountInput = document.getElementById('riskAmount');
+    const sharesInput = document.getElementById('sharesInput');
+
+    const lblRisk = document.getElementById('lbl-risk');
+    const lblEntry = document.getElementById('lbl-entry');
+    const lblStop = document.getElementById('lbl-stop');
+
+    const inputRiskGroup = document.getElementById('input-risk-amount');
+    const inputSharesGroup = document.getElementById('input-shares-count');
+    const resultSharesSection = document.getElementById('result-shares-section');
+    const resultRiskSection = document.getElementById('result-risk-section');
+
+    const historyListEl = document.getElementById('historyList');
+    const statusText = document.getElementById('statusText');
+
+    const backupModal = document.getElementById('backupModal');
+    const backupTitle = document.getElementById('backupTitle');
+    const backupTip = document.getElementById('backupTip');
+    const backupText = document.getElementById('backupText');
+    const copyBtn = document.getElementById('copyBtn');
+    const applyImportBtn = document.getElementById('applyImportBtn');
+
+    const hkdElements = ['totalCostA_HKD', 'actualRiskA_HKD', 'projectedLoss_HKD', 'totalCostB_HKD'];
+
+    // ========= 工具 =========
+    function setStatus(msg) { statusText.textContent = msg; }
+
+    function formatMoney(amount, currency) {
+      const num = Number(amount) || 0;
+      return currency + ' ' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDateTime(ts) {
+      const d = new Date(ts || Date.now());
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${y}-${m}-${dd} ${hh}:${mm}:${ss}`;
+    }
+
+    function safeNumber(val) {
+      const n = parseFloat(val);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // ========= localStorage =========
+    function getDraftObject() {
+      return {
+        market: currentMarket,
+        mode: currentMode,
+        entry: entryPriceInput.value || '',
+        stop: stopLossInput.value || '',
+        riskAmount: riskAmountInput.value || '',
+        shares: sharesInput.value || '',
+        updatedAt: Date.now()
+      };
+    }
+
+    function persistState() {
+      try {
+        const payload = {
+          version: 1,
+          savedAt: Date.now(),
+          draft: getDraftObject(),
+          history: historyRecords
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (e) {
+        setStatus('儲存失敗（localStorage 可能滿咗）');
+      }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!data || typeof data !== 'object') return null;
+        return data;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function applyDraft(draft) {
+      if (!draft || typeof draft !== 'object') return;
+      entryPriceInput.value = draft.entry ?? '';
+      stopLossInput.value = draft.stop ?? '';
+      riskAmountInput.value = draft.riskAmount ?? '';
+      sharesInput.value = draft.shares ?? '';
+      switchMarket(draft.market === 'us' ? 'us' : 'hk', false);
+      switchMode(draft.mode === 'calcRisk' ? 'calcRisk' : 'calcShares', false);
+    }
+
+    // ========= UI 切換 =========
+    function switchMarket(market, shouldPersist = true) {
+      currentMarket = market;
+      const btnHk = document.getElementById('btn-hk');
+      const btnUs = document.getElementById('btn-us');
+
+      if (market === 'hk') {
+        btnHk.classList.add('active', 'hk');
+        btnUs.classList.remove('active', 'us');
+        lblRisk.innerHTML = '最大虧損金額 (HKD)';
+        lblEntry.innerHTML = '買入價格 (HKD)';
+        lblStop.innerHTML = '止損價格 (HKD)';
+        hkdElements.forEach(id => document.getElementById(id).classList.add('hidden'));
+      } else {
+        btnUs.classList.add('active', 'us');
+        btnHk.classList.remove('active', 'hk');
+        lblRisk.innerHTML = "最大虧損金額 <span class='currency-badge'>填港幣 HKD</span>";
+        lblEntry.innerHTML = '買入價格 (USD)';
+        lblStop.innerHTML = '止損價格 (USD)';
+        hkdElements.forEach(id => document.getElementById(id).classList.remove('hidden'));
+      }
+
+      calculate(false);
+      if (shouldPersist) persistState();
+    }
+
+    function switchMode(mode, shouldPersist = true) {
+      currentMode = mode;
+      const tabShares = document.getElementById('tab-shares');
+      const tabRisk = document.getElementById('tab-risk');
+
+      if (mode === 'calcShares') {
+        tabShares.classList.add('active');
+        tabRisk.classList.remove('active');
+        inputRiskGroup.classList.remove('hidden');
+        inputSharesGroup.classList.add('hidden');
+        resultSharesSection.classList.remove('hidden');
+        resultRiskSection.classList.add('hidden');
+      } else {
+        tabShares.classList.remove('active');
+        tabRisk.classList.add('active');
+        inputRiskGroup.classList.add('hidden');
+        inputSharesGroup.classList.remove('hidden');
+        resultSharesSection.classList.add('hidden');
+        resultRiskSection.classList.remove('hidden');
+      }
+
+      calculate(false);
+      if (shouldPersist) persistState();
+    }
+
+    // ========= 計算 =========
+    function setRisk(val) {
+      riskAmountInput.value = val;
+      calculate();
+    }
+
+    function clearInputs() {
+      entryPriceInput.value = '';
+      stopLossInput.value = '';
+      riskAmountInput.value = '';
+      sharesInput.value = '';
+      calculate();
+      persistState();
+      setStatus('已清空輸入');
+    }
+
+    function resetDisplay() {
+      document.getElementById('targetPrice1').textContent = '0.00';
+      document.getElementById('targetPrice2').textContent = '0.00';
+      document.getElementById('suggestedShares').textContent = '0';
+      document.getElementById('stopLossPercentDisplay').textContent = '0.00%';
+
+      document.getElementById('totalCostA').textContent = '0.00';
+      document.getElementById('actualRiskA').textContent = '0.00';
+      document.getElementById('totalCostA_HKD').textContent = '';
+      document.getElementById('actualRiskA_HKD').textContent = '';
+
+      document.getElementById('projectedLoss').textContent = '0.00';
+      document.getElementById('totalCostB').textContent = '0.00';
+      document.getElementById('projectedLoss_HKD').textContent = '';
+      document.getElementById('totalCostB_HKD').textContent = '';
+    }
+
+    function calculate(shouldPersist = true) {
+      const entry = safeNumber(entryPriceInput.value);
+      const stop = safeNumber(stopLossInput.value);
+
+      if (!entry || !stop) {
+        resetDisplay();
+        if (shouldPersist) persistState();
+        return;
+      }
+
+      const diff = Math.abs(entry - stop);
+      if (diff === 0) {
+        resetDisplay();
+        document.getElementById('stopLossPercentDisplay').textContent = '0.00%';
+        if (shouldPersist) persistState();
+        return;
+      }
+
+      const stopLossPct = (diff / entry) * 100;
+      document.getElementById('stopLossPercentDisplay').textContent = stopLossPct.toFixed(2) + '%';
+
+      let target1, target2;
+      if (entry > stop) {
+        target1 = entry + diff;
+        target2 = entry + (diff * 2);
+      } else {
+        target1 = entry - diff;
+        target2 = entry - (diff * 2);
+      }
+
+      document.getElementById('targetPrice1').textContent = target1.toFixed(2);
+      document.getElementById('targetPrice2').textContent = target2.toFixed(2);
+
+      if (currentMode === 'calcShares') {
+        const riskInput = safeNumber(riskAmountInput.value);
+        if (!riskInput || diff === 0) {
+          document.getElementById('suggestedShares').textContent = '0';
+          document.getElementById('totalCostA').textContent = '0.00';
+          document.getElementById('actualRiskA').textContent = '0.00';
+          if (shouldPersist) persistState();
+          return;
+        }
+
+        let finalShares = 0;
+        let currency = 'HK$';
+
+        if (currentMarket === 'hk') {
+          finalShares = Math.floor(riskInput / diff);
+        } else {
+          const riskInUSD = riskInput / HKD_RATE;
+          finalShares = Math.floor(riskInUSD / diff);
+          currency = 'US$';
+        }
+
+        const totalCost = finalShares * entry;
+        const actualRisk = finalShares * diff;
+
+        document.getElementById('suggestedShares').textContent = finalShares.toLocaleString();
+        document.getElementById('totalCostA').textContent = formatMoney(totalCost, currency);
+        document.getElementById('actualRiskA').textContent = formatMoney(actualRisk, currency);
+
+        if (currentMarket === 'us') {
+          document.getElementById('totalCostA_HKD').textContent = `≈ ${formatMoney(totalCost * HKD_RATE, 'HK$')}`;
+          document.getElementById('actualRiskA_HKD').textContent = `≈ ${formatMoney(actualRisk * HKD_RATE, 'HK$')}`;
+        } else {
+          document.getElementById('totalCostA_HKD').textContent = '';
+          document.getElementById('actualRiskA_HKD').textContent = '';
+        }
+      } else {
+        const shares = safeNumber(sharesInput.value);
+        if (!shares) {
+          document.getElementById('projectedLoss').textContent = '0.00';
+          document.getElementById('totalCostB').textContent = '0.00';
+          if (shouldPersist) persistState();
+          return;
+        }
+
+        const totalRisk = shares * diff;
+        const totalCost = shares * entry;
+        const currency = currentMarket === 'hk' ? 'HK$' : 'US$';
+
+        document.getElementById('projectedLoss').textContent = formatMoney(totalRisk, currency);
+        document.getElementById('totalCostB').textContent = formatMoney(totalCost, currency);
+
+        if (currentMarket === 'us') {
+          document.getElementById('projectedLoss_HKD').textContent = `≈ ${formatMoney(totalRisk * HKD_RATE, 'HK$')}`;
+          document.getElementById('totalCostB_HKD').textContent = `≈ ${formatMoney(totalCost * HKD_RATE, 'HK$')}`;
+        } else {
+          document.getElementById('projectedLoss_HKD').textContent = '';
+          document.getElementById('totalCostB_HKD').textContent = '';
+        }
+      }
+
+      if (shouldPersist) persistState();
+    }
+
+    // ========= 快照 / 紀錄 =========
+    function getCurrentSnapshot() {
+      const entry = safeNumber(entryPriceInput.value);
+      const stop = safeNumber(stopLossInput.value);
+      if (!entry || !stop) return null;
+
+      const diff = Math.abs(entry - stop);
+      if (diff <= 0) return null;
+
+      const stopLossPct = (diff / entry) * 100;
+      let target1, target2;
+      if (entry > stop) {
+        target1 = entry + diff;
+        target2 = entry + diff * 2;
+      } else {
+        target1 = entry - diff;
+        target2 = entry - diff * 2;
+      }
+
+      const base = {
+        entry, stop, diff, stopLossPct, target1, target2,
+        market: currentMarket, mode: currentMode
+      };
+
+      if (currentMode === 'calcShares') {
+        const riskInput = safeNumber(riskAmountInput.value);
+        if (!riskInput) return null;
+
+        let shares = 0;
+        let currency = 'HK$';
+        if (currentMarket === 'hk') {
+          shares = Math.floor(riskInput / diff);
+        } else {
+          shares = Math.floor((riskInput / HKD_RATE) / diff);
+          currency = 'US$';
+        }
+
+        return {
+          ...base,
+          riskAmountHKD: riskInput,
+          suggestedShares: shares,
+          totalCost: shares * entry,
+          actualRisk: shares * diff,
+          displayCurrency: currency
+        };
+      } else {
+        const shares = safeNumber(sharesInput.value);
+        if (!shares) return null;
+
+        return {
+          ...base,
+          shares,
+          projectedLoss: shares * diff,
+          totalCost: shares * entry,
+          displayCurrency: currentMarket === 'hk' ? 'HK$' : 'US$'
+        };
+      }
+    }
+
+    function saveCurrentRecord() {
+      const snap = getCurrentSnapshot();
+      if (!snap) {
+        setStatus('請先輸入完整有效數值再儲存');
+        return;
+      }
+
+      const record = {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        ts: Date.now(),
+        ...snap
+      };
+
+      historyRecords.unshift(record);
+      renderHistory();
+      persistState();
+      setStatus('已儲存一筆紀錄');
+    }
+
+    function deleteHistory(id) {
+      historyRecords = historyRecords.filter(x => x.id !== id);
+      renderHistory();
+      persistState();
+      setStatus('已刪除紀錄');
+    }
+
+    function clearHistory() {
+      historyRecords = [];
+      renderHistory();
+      persistState();
+      setStatus('已清除全部紀錄');
+    }
+
+    function renderHistory() {
+      if (!historyRecords.length) {
+        historyListEl.innerHTML = '<div class="history-empty">暫無紀錄</div>';
+        return;
+      }
+
+      historyListEl.innerHTML = historyRecords.map(item => {
+        const marketTag = item.market === 'hk' ? '港股 HK' : '美股 US';
+        const modeTag = item.mode === 'calcShares' ? '計算股數' : '計算風險';
+        const direction = item.entry > item.stop ? '多單' : '空單';
+
+        let body = `
+          <div class="history-kv">進場 / 止損：<strong>${Number(item.entry).toFixed(2)} / ${Number(item.stop).toFixed(2)}</strong></div>
+          <div class="history-kv">止損幅度：<strong>${Number(item.stopLossPct || 0).toFixed(2)}%</strong></div>
+          <div class="history-kv">目標價 1:1 / 1:2：<strong>${Number(item.target1).toFixed(2)} / ${Number(item.target2).toFixed(2)}</strong></div>
+          <div class="history-kv">方向：<strong>${direction}</strong></div>
+        `;
+
+        if (item.mode === 'calcShares') {
+          body += `
+            <div class="history-kv">風險額(HKD)：<strong>${formatMoney(item.riskAmountHKD || 0, 'HK$')}</strong></div>
+            <div class="history-kv">建議股數：<strong>${Number(item.suggestedShares || 0).toLocaleString()}</strong></div>
+            <div class="history-kv">總成本：<strong>${formatMoney(item.totalCost || 0, item.displayCurrency || 'HK$')}</strong></div>
+            <div class="history-kv">實際風險：<strong>${formatMoney(item.actualRisk || 0, item.displayCurrency || 'HK$')}</strong></div>
+          `;
+        } else {
+          body += `
+            <div class="history-kv">持有股數：<strong>${Number(item.shares || 0).toLocaleString()}</strong></div>
+            <div class="history-kv">預計虧損：<strong>${formatMoney(item.projectedLoss || 0, item.displayCurrency || 'HK$')}</strong></div>
+            <div class="history-kv">總成本：<strong>${formatMoney(item.totalCost || 0, item.displayCurrency || 'HK$')}</strong></div>
+          `;
+        }
+
+        return `
+          <div class="history-item">
+            <div class="history-top">
+              <div class="history-time">${formatDateTime(item.ts)}</div>
+              <div>
+                <span class="tag ${item.market === 'hk' ? 'hk' : 'us'}">${marketTag}</span>
+                <span class="tag">${modeTag}</span>
+              </div>
+            </div>
+            <div class="history-grid">${body}</div>
+            <div class="history-actions">
+              <button class="btn danger-soft" onclick="deleteHistory('${item.id}')">刪除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========= JSON 備份 =========
+    function buildBackupPayload() {
+      return {
+        version: 1,
+        app: 'risk-calculator-gh-pages',
+        exportedAt: Date.now(),
+        draft: getDraftObject(),
+        history: historyRecords
+      };
+    }
+
+    function openBackupExport() {
+      backupMode = 'export';
+      backupTitle.textContent = '備份 JSON（匯出）';
+      backupTip.textContent = '可複製文字或下載 JSON 檔。';
+      copyBtn.classList.remove('hidden');
+      applyImportBtn.classList.add('hidden');
+
+      backupText.value = JSON.stringify(buildBackupPayload(), null, 2);
+      backupModal.classList.add('show');
+      setStatus('已產生備份 JSON');
+    }
+
+    function openBackupImport() {
+      backupMode = 'import';
+      backupTitle.textContent = '貼上 JSON（匯入）';
+      backupTip.textContent = '貼上完整 JSON，按「套用匯入」會覆蓋現有資料。';
+      copyBtn.classList.add('hidden');
+      applyImportBtn.classList.remove('hidden');
+
+      backupText.value = '';
+      backupText.placeholder = '請貼上之前匯出的 JSON...';
+      backupModal.classList.add('show');
+      setStatus('請貼上 JSON 並套用匯入');
+    }
+
+    function closeBackupModal() { backupModal.classList.remove('show'); }
+
+    async function copyBackupText() {
+      const text = backupText.value || '';
+      if (!text) return setStatus('無可複製內容');
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          setStatus('已複製到剪貼簿');
+        } else {
+          selectBackupText();
+          setStatus('請手動複製已選文字');
+        }
+      } catch (_) {
+        selectBackupText();
+        setStatus('自動複製失敗，請手動複製');
+      }
+    }
+
+    function selectBackupText() {
+      backupText.focus();
+      backupText.select();
+      backupText.setSelectionRange(0, backupText.value.length);
+    }
+
+    function downloadBackupFile() {
+      const text = backupText.value || JSON.stringify(buildBackupPayload(), null, 2);
+      const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date();
+      const fileName = `risk-backup-${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}-${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}${String(ts.getSeconds()).padStart(2,'0')}.json`;
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus('已下載 JSON 檔');
+    }
+
+    function applyImport() {
+      try {
+        const raw = backupText.value.trim();
+        if (!raw) return setStatus('請先貼上 JSON');
+
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.history)) {
+          throw new Error('格式不正確（缺少 history）');
+        }
+
+        historyRecords = data.history
+          .filter(x => x && typeof x === 'object')
+          .map(x => ({
+            ...x,
+            id: x.id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            ts: x.ts || Date.now()
+          }))
+          .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+        applyDraft(data.draft || {});
+        renderHistory();
+        calculate(false);
+        persistState();
+        closeBackupModal();
+        setStatus('匯入成功（已覆蓋目前資料）');
+      } catch (e) {
+        setStatus('匯入失敗：' + (e && e.message ? e.message : String(e)));
+      }
+    }
+
+    // ========= 事件 =========
+    [entryPriceInput, stopLossInput, riskAmountInput, sharesInput].forEach(el => {
+      el.addEventListener('input', () => calculate(true));
+    });
+
+    backupModal.addEventListener('click', (e) => {
+      if (e.target === backupModal) closeBackupModal();
+    });
+
+    // ========= 初始化 =========
+    function init() {
+      switchMarket('hk', false);
+      switchMode('calcShares', false);
+
+      const saved = loadState();
+      if (saved) {
+        historyRecords = Array.isArray(saved.history) ? saved.history : [];
+        applyDraft(saved.draft || {});
+        setStatus('已載入本機儲存資料');
+      } else {
+        setStatus('準備完成（尚未有本機資料）');
+      }
+
+      renderHistory();
+      calculate(false);
+      persistState();
+    }
+
+    init();
+
+    // inline onclick 需要
+    window.switchMarket = switchMarket;
+    window.switchMode = switchMode;
+    window.setRisk = setRisk;
+    window.clearInputs = clearInputs;
+    window.saveCurrentRecord = saveCurrentRecord;
+    window.deleteHistory = deleteHistory;
+    window.clearHistory = clearHistory;
+    window.openBackupExport = openBackupExport;
+    window.openBackupImport = openBackupImport;
+    window.closeBackupModal = closeBackupModal;
+    window.copyBackupText = copyBackupText;
+    window.selectBackupText = selectBackupText;
+    window.downloadBackupFile = downloadBackupFile;
+    window.applyImport = applyImport;
+  </script>
+</body>
+</html>
