@@ -1,0 +1,2515 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>交易風險工具</title>
+
+  <style>
+    :root {
+      --primary: #007aff;
+      --bg: #f2f2f7;
+      --card-bg: #fff;
+      --text: #1c1c1e;
+      --text-secondary: #8e8e93;
+      --border: #e5e5ea;
+      --success: #34c759;
+      --success-light: #32ade6;
+      --danger: #ff3b30;
+      --hk-color: #e02020;
+      --us-color: #007aff;
+      --jp-color: #d91f26;
+      --fu-color: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 14px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .container { max-width: 760px; margin: 0 auto; }
+
+    .market-switch {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 2px;
+      width: fit-content;
+      margin: 0 auto 12px;
+      padding: 2px;
+      background: #e4e4e4;
+      border-radius: 20px;
+    }
+
+    .market-btn {
+      border: 0;
+      border-radius: 18px;
+      padding: 8px 16px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .market-btn.active {
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+    }
+
+    .market-btn.active.hk { color: var(--hk-color); }
+    .market-btn.active.us { color: var(--us-color); }
+    .market-btn.active.jp { color: var(--jp-color); }
+    .market-btn.active.fu { color: var(--fu-color); }
+
+    /* 縮小「計算股數／計算風險」切換按鈕並置中 */
+    .tabs {
+      display: flex;
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto 12px;
+      padding: 2px;
+      background: #e4e4e4;
+      border-radius: 10px;
+    }
+
+    .tab {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: transparent;
+      color: var(--text-secondary);
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.25;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: #fff;
+      color: var(--text);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+    }
+
+    .card {
+      margin-bottom: 12px;
+      padding: 14px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .05);
+    }
+
+    .input-group { margin-bottom: 12px; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+      font-size: 18px;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .two-column-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .two-column-row > .input-group { min-width: 0; }
+    .two-column-row input { font-size: 16px; }
+
+    .adjust-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .adjust-btn {
+      flex: 1;
+      min-width: 76px;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px;
+      background: #f0f0f0;
+      color: #222;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 0;
+    }
+
+    .result-row:last-child { border-bottom: 0; }
+
+    .result-label {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .result-value-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .result-value {
+      font-family: "SF Mono", Menlo, monospace;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .result-sub-value {
+      margin-top: 3px;
+      color: var(--text-secondary);
+      font-family: "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .targets-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .target-box {
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      background: #fafafa;
+    }
+
+    .target-box .result-label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    .target-box .result-value {
+      display: block;
+      text-align: left;
+    }
+
+    .highlight { color: var(--primary); font-size: 17px; }
+    .danger { color: var(--danger); }
+    .success { color: var(--success); }
+    .success-light { color: var(--success-light); }
+    .hidden { display: none !important; }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button.btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #ececec;
+      color: #222;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn.primary { background: var(--primary); color: #fff; }
+    .btn.danger-soft { background: #fff1f0; color: var(--danger); }
+
+    .status {
+      min-height: 18px;
+      margin-top: 10px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .history-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .history-empty {
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      color: var(--text-secondary);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .history-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .history-top {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .history-time {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .tag {
+      display: inline-block;
+      margin-right: 6px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: #f3f3f3;
+      color: #555;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .tag.hk { background: #fff0f0; color: var(--hk-color); }
+    .tag.us { background: #eef5ff; color: var(--us-color); }
+    .tag.jp { background: #fff1f1; color: var(--jp-color); }
+    .tag.note { background: #fff8e1; color: #a86a00; }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+    }
+
+    .history-kv {
+      color: #4b4b4b;
+      font-size: 12px;
+    }
+
+    .history-kv strong {
+      color: #111;
+      font-family: "SF Mono", Menlo, monospace;
+    }
+
+    .history-kv.full {
+      grid-column: 1 / -1;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 9px;
+      background: #fafafa;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.45;
+    }
+
+    .history-kv.full strong {
+      font-family: inherit;
+      font-weight: 600;
+    }
+
+    .history-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .search-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .search-row input[type="text"] {
+      flex: 1;
+      min-width: 160px;
+      padding: 10px;
+      font-size: 15px;
+    }
+
+    .total-risk-box {
+      margin: 4px 0 8px;
+      border: 1px solid #ffd6d2;
+      border-radius: 12px;
+      padding: 4px 12px;
+      background: #fff7f6;
+    }
+
+    .total-risk-tip {
+      margin: 0 0 8px;
+      color: var(--text-secondary);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: none;
+      justify-content: center;
+      align-items: flex-end;
+      background: rgba(0, 0, 0, .45);
+    }
+
+    .modal.show { display: flex; }
+
+    .sheet {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 760px;
+      max-height: 78vh;
+      border-radius: 16px 16px 0 0;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .sheet-title { font-size: 16px; font-weight: 700; }
+    .sheet-tip { color: var(--text-secondary); font-size: 12px; }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      max-height: 50vh;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      outline: none;
+      color: #111;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .currency-badge {
+      display: inline-block;
+      margin-left: 5px;
+      border-radius: 4px;
+      padding: 2px 6px;
+      background: #eee;
+      color: #666;
+      font-size: 10px;
+      vertical-align: middle;
+    }
+
+    .f-wrap {
+      border: 1px solid #dbe8ff;
+      border-radius: 12px;
+      padding: 10px;
+      background: #f7fbff;
+    }
+
+    .f-title {
+      margin-bottom: 8px;
+      color: #114a9f;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .f-market-switch,
+    .f-inst-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .f-btn,
+    .f-inst-btn {
+      border: 1px solid #d4d4d8;
+      background: #fff;
+      color: #444;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .f-btn {
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+    }
+
+    .f-inst-btn {
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .f-btn.active.hk {
+      border-color: #f2bcbc;
+      background: #fff1f1;
+      color: #c12323;
+    }
+
+    .f-btn.active.us {
+      border-color: #bfd5ff;
+      background: #eef5ff;
+      color: #1f61d1;
+    }
+
+    .f-inst-btn.active {
+      border-color: #7bb0ff;
+      background: #edf4ff;
+      color: #0b57d0;
+    }
+
+    .f-two {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .dir-btn {
+      border: 1px solid #d4d4d8;
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      color: #555;
+      text-align: center;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .dir-btn.active.long {
+      border-color: #9de1b2;
+      background: #ecfff1;
+      color: #1d8f3d;
+    }
+
+    .dir-btn.active.short {
+      border-color: #f2bcbc;
+      background: #fff1f1;
+      color: #c12323;
+    }
+
+    .f-result-main {
+      margin-top: 10px;
+      border-radius: 12px;
+      padding: 10px;
+      background: linear-gradient(135deg, #1f2937, #0f172a);
+      color: #fff;
+    }
+
+    .f-settings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .f-inst-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    @media (max-width: 520px) {
+      .history-grid { grid-template-columns: 1fr; }
+      .result-value { font-size: 14px; }
+      .highlight { font-size: 16px; }
+
+      .two-column-row,
+      .targets-row,
+      .f-two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .two-column-row input { font-size: 15px; }
+      .two-column-row label { font-size: 12px; }
+      .target-box { padding: 8px 7px; }
+      .target-box .result-label { font-size: 12px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="market-switch">
+      <button class="market-btn active hk" id="btn-hk" type="button" onclick="switchMarket('hk')">港股 (HK)</button>
+      <button class="market-btn us" id="btn-us" type="button" onclick="switchMarket('us')">美股 (US)</button>
+      <button class="market-btn jp" id="btn-jp" type="button" onclick="switchMarket('jp')">日股 (JP)</button>
+      <button class="market-btn fu" id="btn-fu" type="button" onclick="switchMarket('futures')">期貨</button>
+    </div>
+
+    <section id="stock-section">
+      <div class="tabs">
+        <button class="tab active" id="tab-shares" type="button" onclick="switchMode('calcShares')">
+          計算股數
+        </button>
+        <button class="tab" id="tab-risk" type="button" onclick="switchMode('calcRisk')">
+          計算風險
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="two-column-row">
+          <div class="input-group">
+            <label id="lbl-entry" for="entryPrice">買入價格 (HKD)</label>
+            <input type="number" id="entryPrice" placeholder="0.00" inputmode="decimal" step="any" />
+          </div>
+          <div class="input-group">
+            <label id="lbl-stop" for="stopLoss">止損價格 (HKD)</label>
+            <input type="number" id="stopLoss" placeholder="0.00" inputmode="decimal" step="any" />
+          </div>
+        </div>
+
+        <div class="two-column-row">
+          <div id="input-risk-amount" class="input-group">
+            <label id="lbl-risk" for="riskAmount">最大虧損金額 (HKD)</label>
+            <input type="number" id="riskAmount" placeholder="例如：1000" inputmode="decimal" min="0" />
+            <div class="adjust-btns">
+              <button class="adjust-btn" type="button" onclick="setRisk(15000)">15000</button>
+              <button class="adjust-btn" type="button" onclick="setRisk(20000)">20000</button>
+            </div>
+          </div>
+
+          <div id="input-shares-count" class="input-group hidden">
+            <label for="sharesInput">持有股數 (Shares)</label>
+            <input type="number" id="sharesInput" placeholder="例如：1000" inputmode="numeric" min="1" step="1" />
+          </div>
+
+          <div class="input-group">
+            <label for="noteInput">
+              備註 (Note)
+              <span class="currency-badge" id="noteCount">0 / 10</span>
+            </label>
+            <input type="text" id="noteInput" maxlength="10" placeholder="最多 10 字" />
+          </div>
+        </div>
+
+        <div id="input-jp-rate" class="input-group hidden">
+          <label for="jpRate">日股匯率（1 JPY = ? HKD）</label>
+          <input type="number" id="jpRate" value="0.052" step="any" placeholder="例如：0.052" inputmode="decimal" />
+          <div class="adjust-btns">
+            <button class="adjust-btn" type="button" onclick="setJpRate(0.05)">0.050</button>
+            <button class="adjust-btn" type="button" onclick="setJpRate(0.052)">0.052</button>
+            <button class="adjust-btn" type="button" onclick="setJpRate(0.055)">0.055</button>
+            <button class="adjust-btn" type="button" onclick="setJpRate(0.06)">0.060</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="result-shares-section">
+          <div class="result-row">
+            <span class="result-label">建議買入股數</span>
+            <span class="result-value highlight" id="suggestedShares">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">實際總成本</span>
+            <div class="result-value-group">
+              <span class="result-value" id="totalCostA">0.00</span>
+              <span class="result-sub-value hidden" id="totalCostA_HKD"></span>
+            </div>
+          </div>
+          <div class="result-row">
+            <span class="result-label">實際風險金額</span>
+            <div class="result-value-group">
+              <span class="result-value danger" id="actualRiskA">0.00</span>
+              <span class="result-sub-value hidden" id="actualRiskA_HKD"></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="result-risk-section" class="hidden">
+          <div class="result-row">
+            <span class="result-label">預計虧損金額</span>
+            <div class="result-value-group">
+              <span class="result-value danger highlight" id="projectedLoss">0.00</span>
+              <span class="result-sub-value hidden" id="projectedLoss_HKD"></span>
+            </div>
+          </div>
+          <div class="result-row">
+            <span class="result-label">總投入成本</span>
+            <div class="result-value-group">
+              <span class="result-value" id="totalCostB">0.00</span>
+              <span class="result-sub-value hidden" id="totalCostB_HKD"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-row">
+          <span class="result-label">止損幅度 (Stop %)</span>
+          <span class="result-value" id="stopLossPercentDisplay">0.00%</span>
+        </div>
+
+        <div class="targets-row">
+          <div class="target-box">
+            <span class="result-label">目標價 (1:1)</span>
+            <span class="result-value success-light" id="targetPrice1">0.00</span>
+          </div>
+          <div class="target-box">
+            <span class="result-label">目標價 (1:2)</span>
+            <span class="result-value success" id="targetPrice2">0.00</span>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn primary" type="button" onclick="saveCurrentRecord()">儲存目前計算</button>
+          <button class="btn" type="button" onclick="clearInputs()">清空輸入</button>
+          <button class="btn" type="button" onclick="storageDiagnosis()">儲存診斷</button>
+        </div>
+
+        <div class="status" id="statusText" role="status">準備完成</div>
+      </div>
+    </section>
+
+    <section id="futures-section" class="hidden">
+      <div class="card">
+        <div class="history-title">
+          <strong>📈 期貨風險工具</strong>
+          <button class="btn" id="f-toggle-settings-btn" type="button">參數設定</button>
+        </div>
+
+        <div class="f-wrap">
+          <div class="f-title">F Cal</div>
+
+          <label>期貨市場</label>
+          <div class="f-market-switch">
+            <button id="f-market-hk" class="f-btn hk active" type="button">港期 HK</button>
+            <button id="f-market-us" class="f-btn us" type="button">美期 US</button>
+          </div>
+
+          <label>交易商品</label>
+          <div id="f-instrument-row" class="f-inst-row"></div>
+          <div class="status" id="f-inst-detail" style="margin-top:0;">合約規格：- ｜ 匯率：-</div>
+
+          <div class="f-two" style="margin-top:6px;">
+            <button id="f-long-btn" class="dir-btn active long" type="button">做多 (Long)</button>
+            <button id="f-short-btn" class="dir-btn" type="button">做空 (Short)</button>
+          </div>
+
+          <div class="two-column-row" style="margin-top:10px;">
+            <div class="input-group">
+              <label id="f-entry-label" for="f-entry">買入價 (Entry)</label>
+              <input type="number" id="f-entry" placeholder="0.00" inputmode="decimal" step="any" />
+            </div>
+            <div class="input-group">
+              <label for="f-stop">止損價 (Stop Loss)</label>
+              <input type="number" id="f-stop" placeholder="0.00" inputmode="decimal" step="any" />
+            </div>
+          </div>
+
+          <div class="two-column-row">
+            <div class="input-group">
+              <label for="f-risk">最大虧損金額 (HKD)</label>
+              <input type="number" id="f-risk" value="10000" placeholder="10000" inputmode="decimal" min="0" />
+            </div>
+            <div class="input-group">
+              <label for="f-note">
+                備註 (Note)
+                <span class="currency-badge" id="fNoteCount">0 / 10</span>
+              </label>
+              <input type="text" id="f-note" maxlength="10" placeholder="最多 10 字" />
+            </div>
+          </div>
+
+          <div id="f-empty" class="history-empty" style="margin-top:10px;">
+            輸入價格以查看期貨風險分析
+          </div>
+
+          <div id="f-result" class="hidden">
+            <div class="f-result-main">
+              <div class="result-row" style="border-color:#334155;">
+                <span class="result-label" style="color:#94a3b8;">建議最大手數</span>
+                <span class="result-value" style="color:#facc15;" id="f-lots">0 手</span>
+              </div>
+              <div class="result-row" style="border-color:#334155;">
+                <span class="result-label" style="color:#94a3b8;">實際風險金額</span>
+                <span class="result-value danger" id="f-actual-risk">HK$ 0.00</span>
+              </div>
+              <div class="result-row" style="border-bottom:none;">
+                <span class="result-label" style="color:#94a3b8;">止損點數</span>
+                <span class="result-value" style="color:#e2e8f0;" id="f-point-diff">0 點</span>
+              </div>
+            </div>
+
+            <div class="targets-row" style="margin-top:8px;">
+              <div class="target-box">
+                <span class="result-label">Target 1 (1:1)</span>
+                <span id="f-target1" class="result-value success-light">0.0</span>
+              </div>
+              <div class="target-box">
+                <span class="result-label">Target 2 (1:2)</span>
+                <span id="f-target2" class="result-value success">0.0</span>
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn primary" type="button" id="f-save-btn">儲存期貨計算</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="f-settings" class="hidden" style="margin-top:10px;">
+          <div class="status">
+            公式：每手虧損（HKD）= |Entry − Stop| × 合約規格 × 匯率
+          </div>
+          <div id="f-settings-list" class="f-settings-list"></div>
+          <div class="btn-row">
+            <button class="btn" type="button" id="f-add-instrument-btn">＋新增商品</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="card">
+      <div class="history-title">
+        <strong>📒 計算紀錄</strong>
+        <button class="btn danger-soft" type="button" onclick="clearHistory()">清除全部</button>
+      </div>
+
+      <div class="total-risk-box">
+        <div class="result-row">
+          <span class="result-label">已儲存 Trade 總風險</span>
+          <span class="result-value danger" id="totalTradeRisk">HK$ 0.00</span>
+        </div>
+      </div>
+
+      <p class="total-risk-tip">
+        統計所有已儲存紀錄的風險，統一換算為港幣；未儲存的輸入不計算。
+      </p>
+
+      <div class="search-row">
+        <input type="text" id="historySearch" placeholder="搜尋備註 / 市場 / 價格..." />
+        <button class="btn" type="button" onclick="clearHistorySearch()">清除搜尋</button>
+      </div>
+
+      <div id="historyList" class="history-list">
+        <div class="history-empty">暫無紀錄</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="noteModal">
+    <div class="sheet">
+      <div class="sheet-title">編輯備註</div>
+      <div class="sheet-tip" id="noteModalTip">最多 10 字，儲存後會寫入本機。</div>
+      <textarea id="noteModalText" maxlength="10"></textarea>
+      <div class="btn-row">
+        <button class="btn primary" type="button" onclick="saveNoteModal()">儲存備註</button>
+        <button class="btn danger-soft" type="button" onclick="deleteNoteModal()">清除備註</button>
+        <button class="btn" type="button" onclick="closeNoteModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_PRIMARY_KEY = 'risk_calculator_v3';
+    const STORAGE_LEGACY_KEYS = [
+      'risk_calculator_v2',
+      'risk_calculator_v1',
+      'risk_calculator_mirror'
+    ];
+
+    const HKD_RATE = 7.8;
+    const DEFAULT_JPY_HKD_RATE = 0.052;
+    const NOTE_MAX = 10;
+
+    const DEFAULT_FUTURES_INSTRUMENTS = [
+      {
+        id: 'hsi',
+        market: 'hk',
+        name: '恆生指數 (HSI)',
+        contractSize: 50,
+        currencyRate: 1,
+        currencySymbol: 'HKD'
+      },
+      {
+        id: 'mhi',
+        market: 'hk',
+        name: '小恆指 (MHI)',
+        contractSize: 10,
+        currencyRate: 1,
+        currencySymbol: 'HKD'
+      },
+      {
+        id: 'nq',
+        market: 'us',
+        name: '納指 (NQ)',
+        contractSize: 20,
+        currencyRate: 7.8,
+        currencySymbol: 'USD'
+      },
+      {
+        id: 'mnq',
+        market: 'us',
+        name: '微納指 (MNQ)',
+        contractSize: 2,
+        currencyRate: 7.8,
+        currencySymbol: 'USD'
+      }
+    ];
+
+    const el = id => document.getElementById(id);
+
+    let mainView = 'hk';
+    let currentMarket = 'hk';
+    let currentMode = 'calcShares';
+    let historyRecords = [];
+    let historyKeyword = '';
+    let storageUsable = true;
+    let editingNoteId = null;
+
+    let futuresMarket = 'hk';
+    let futuresDirection = 'long';
+    let futuresInstruments = JSON.parse(
+      JSON.stringify(DEFAULT_FUTURES_INSTRUMENTS)
+    );
+    let futuresInstrumentId = 'hsi';
+    let futuresEditingId = null;
+    let lastFuturesResult = null;
+
+    function setStatus(message) {
+      el('statusText').textContent = message;
+    }
+
+    function safeNumber(value) {
+      if (value === '' || value === null || value === undefined) return 0;
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function formatMoney(amount, currency) {
+      const n = Number(amount);
+      const safe = Number.isFinite(n) ? n : 0;
+      return currency + ' ' + safe.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatDateTime(ts) {
+      const raw = Number(ts);
+      const d = new Date(
+        Number.isFinite(raw) && raw > 0 ? raw : Date.now()
+      );
+
+      if (Number.isNaN(d.getTime())) return '-';
+
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+
+      return `${y}-${m}-${day} ${hh}:${mm}:${ss}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function trimNote(value) {
+      return String(value == null ? '' : value)
+        .trim()
+        .slice(0, NOTE_MAX);
+    }
+
+    function newId() {
+      return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function getJpRate() {
+      const rate = safeNumber(el('jpRate').value);
+      return rate > 0 ? rate : DEFAULT_JPY_HKD_RATE;
+    }
+
+    function setJpRate(value) {
+      el('jpRate').value = value;
+      calculate();
+    }
+
+    function getMarketConfig(market) {
+      if (market === 'hk') {
+        return { code: 'hk', rate: 1, currency: 'HK$' };
+      }
+
+      if (market === 'us') {
+        return { code: 'us', rate: HKD_RATE, currency: 'US$' };
+      }
+
+      return {
+        code: 'jp',
+        rate: getJpRate(),
+        currency: 'JP¥'
+      };
+    }
+
+    function testLocalStorageUsable() {
+      try {
+        const key = '__risk_test__';
+        localStorage.setItem(key, '1');
+        localStorage.removeItem(key);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function storageDiagnosis() {
+      if (!testLocalStorageUsable()) {
+        setStatus('⚠️ localStorage 不可用，本機資料無法自動儲存');
+        return;
+      }
+
+      const raw = localStorage.getItem(STORAGE_PRIMARY_KEY);
+      let savedAt = '';
+
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          if (data.savedAt) savedAt = formatDateTime(data.savedAt);
+        } catch (_) {}
+      }
+
+      const noteCount = historyRecords.filter(
+        item => item && trimNote(item.note)
+      ).length;
+
+      setStatus(
+        `✅ localStorage 可用；主資料${raw ? '存在' : '不存在'}` +
+        `${savedAt ? `（最後儲存：${savedAt}）` : ''}` +
+        `｜紀錄 ${historyRecords.length} 筆，其中 ${noteCount} 筆有備註`
+      );
+    }
+
+    function updateNoteCount() {
+      el('noteCount').textContent =
+        `${el('noteInput').value.length} / ${NOTE_MAX}`;
+
+      el('fNoteCount').textContent =
+        `${el('f-note').value.length} / ${NOTE_MAX}`;
+    }
+
+    function getDraftObject() {
+      return {
+        mainView,
+        market: currentMarket,
+        mode: currentMode,
+        entry: el('entryPrice').value,
+        stop: el('stopLoss').value,
+        riskAmount: el('riskAmount').value,
+        shares: el('sharesInput').value,
+        note: trimNote(el('noteInput').value),
+        jpRate: el('jpRate').value,
+        historyKeyword,
+
+        futures: {
+          market: futuresMarket,
+          direction: futuresDirection,
+          instrumentId: futuresInstrumentId,
+          entry: el('f-entry').value,
+          stop: el('f-stop').value,
+          risk: el('f-risk').value,
+          note: trimNote(el('f-note').value),
+          settingsOpen: !el('f-settings').classList.contains('hidden')
+        },
+
+        updatedAt: Date.now()
+      };
+    }
+
+    function buildPersistPayload() {
+      return {
+        version: 3,
+        app: 'risk-calculator-gh-pages',
+        savedAt: Date.now(),
+        draft: getDraftObject(),
+        history: historyRecords,
+        futuresInstruments
+      };
+    }
+
+    function persistState() {
+      if (!storageUsable) return;
+
+      try {
+        const text = JSON.stringify(buildPersistPayload());
+
+        localStorage.setItem(STORAGE_PRIMARY_KEY, text);
+
+        for (const key of STORAGE_LEGACY_KEYS) {
+          try {
+            localStorage.setItem(key, text);
+          } catch (_) {}
+        }
+      } catch (_) {
+        setStatus('儲存失敗：localStorage 可能已滿或被限制');
+      }
+    }
+
+    function parsePayload(raw) {
+      try {
+        const data = JSON.parse(raw);
+
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+          return null;
+        }
+
+        if (!Array.isArray(data.history)) data.history = [];
+        if (!data.draft || typeof data.draft !== 'object') data.draft = {};
+
+        if (!Array.isArray(data.futuresInstruments)) {
+          data.futuresInstruments = null;
+        }
+
+        return data;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function loadState() {
+      let best = null;
+
+      for (const key of [STORAGE_PRIMARY_KEY, ...STORAGE_LEGACY_KEYS]) {
+        let raw;
+
+        try {
+          raw = localStorage.getItem(key);
+        } catch (_) {
+          continue;
+        }
+
+        if (!raw) continue;
+
+        const parsed = parsePayload(raw);
+        if (!parsed) continue;
+
+        const time = Number(parsed.savedAt || parsed.exportedAt || 0);
+        const bestTime = best
+          ? Number(best.savedAt || best.exportedAt || 0)
+          : -1;
+
+        if (!best || time > bestTime) best = parsed;
+      }
+
+      return best;
+    }
+
+    function normalizeHistory(input) {
+      if (!Array.isArray(input)) return [];
+
+      const usedIds = new Set();
+
+      return input
+        .filter(item =>
+          item &&
+          typeof item === 'object' &&
+          !Array.isArray(item)
+        )
+        .map(item => {
+          let id = String(item.id || '');
+
+          if (!/^[a-zA-Z0-9_-]+$/.test(id) || usedIds.has(id)) {
+            id = newId();
+          }
+
+          usedIds.add(id);
+
+          return {
+            ...item,
+            id,
+            ts:
+              Number.isFinite(Number(item.ts)) &&
+              Number(item.ts) > 0
+                ? Number(item.ts)
+                : Date.now(),
+            note: trimNote(item.note)
+          };
+        });
+    }
+
+    function normalizeInstruments(input) {
+      if (!Array.isArray(input)) return null;
+
+      const usedIds = new Set();
+
+      const list = input
+        .filter(item =>
+          item &&
+          typeof item === 'object' &&
+          item.name
+        )
+        .map(item => {
+          let id = String(item.id || '');
+
+          if (!/^[a-zA-Z0-9_-]+$/.test(id) || usedIds.has(id)) {
+            id = 'inst_' + newId();
+          }
+
+          usedIds.add(id);
+
+          const contractSize = safeNumber(item.contractSize);
+          const currencyRate = safeNumber(item.currencyRate);
+
+          return {
+            id,
+            market:
+              String(item.market).toLowerCase() === 'us'
+                ? 'us'
+                : 'hk',
+            name: String(item.name),
+            contractSize: contractSize > 0 ? contractSize : 1,
+            currencyRate: currencyRate > 0 ? currencyRate : 1,
+            currencySymbol:
+              String(item.currencySymbol || 'HKD').toUpperCase()
+          };
+        });
+
+      return list.length ? list : null;
+    }
+
+    function applyDraft(draft) {
+      if (!draft || typeof draft !== 'object') return;
+
+      el('entryPrice').value = draft.entry ?? '';
+      el('stopLoss').value = draft.stop ?? '';
+      el('riskAmount').value = draft.riskAmount ?? '';
+      el('sharesInput').value = draft.shares ?? '';
+      el('noteInput').value = trimNote(draft.note);
+      el('jpRate').value =
+        draft.jpRate ?? String(DEFAULT_JPY_HKD_RATE);
+
+      historyKeyword =
+        typeof draft.historyKeyword === 'string'
+          ? draft.historyKeyword
+          : '';
+
+      el('historySearch').value = historyKeyword;
+
+      switchMarket(
+        draft.mainView || draft.market || 'hk',
+        false
+      );
+
+      switchMode(
+        draft.mode === 'calcRisk' ? 'calcRisk' : 'calcShares',
+        false
+      );
+
+      if (draft.futures && typeof draft.futures === 'object') {
+        const f = draft.futures;
+
+        setFuturesMarket(f.market === 'us' ? 'us' : 'hk', false);
+        setFuturesDirection(
+          f.direction === 'short' ? 'short' : 'long',
+          false
+        );
+
+        const chosen = futuresInstruments.find(
+          item => item.id === f.instrumentId
+        );
+
+        if (chosen) {
+          futuresMarket = chosen.market;
+          futuresInstrumentId = chosen.id;
+        } else {
+          ensureFuturesSelection();
+        }
+
+        el('f-entry').value = f.entry ?? '';
+        el('f-stop').value = f.stop ?? '';
+        el('f-risk').value = f.risk ?? '10000';
+        el('f-note').value = trimNote(f.note);
+
+        el('f-settings').classList.toggle(
+          'hidden',
+          !Boolean(f.settingsOpen)
+        );
+      }
+
+      renderFuturesMarketButtons();
+      renderFuturesInstrumentButtons();
+      updateFuturesInstrumentDetail();
+      updateNoteCount();
+    }
+
+    function switchMarket(view, shouldPersist = true) {
+      mainView = ['hk', 'us', 'jp', 'futures'].includes(view)
+        ? view
+        : 'hk';
+
+      for (const market of ['hk', 'us', 'jp', 'fu']) {
+        el('btn-' + market).classList.remove(
+          'active', 'hk', 'us', 'jp', 'fu'
+        );
+      }
+
+      const buttonKey = mainView === 'futures' ? 'fu' : mainView;
+      el('btn-' + buttonKey).classList.add('active', buttonKey);
+
+      const isFutures = mainView === 'futures';
+
+      el('stock-section').classList.toggle('hidden', isFutures);
+      el('futures-section').classList.toggle('hidden', !isFutures);
+
+      if (isFutures) {
+        calculateFuturesRisk(false);
+        if (shouldPersist) persistState();
+        return;
+      }
+
+      currentMarket = mainView;
+
+      const isHk = currentMarket === 'hk';
+      const isJp = currentMarket === 'jp';
+
+      el('lbl-risk').innerHTML = isHk
+        ? '最大虧損金額 (HKD)'
+        : "最大虧損金額 <span class='currency-badge'>HKD</span>";
+
+      el('lbl-entry').textContent =
+        `買入價格 (${isHk ? 'HKD' : isJp ? 'JPY' : 'USD'})`;
+
+      el('lbl-stop').textContent =
+        `止損價格 (${isHk ? 'HKD' : isJp ? 'JPY' : 'USD'})`;
+
+      el('input-jp-rate').classList.toggle('hidden', !isJp);
+
+      for (const id of [
+        'totalCostA_HKD',
+        'actualRiskA_HKD',
+        'projectedLoss_HKD',
+        'totalCostB_HKD'
+      ]) {
+        el(id).classList.toggle('hidden', isHk);
+      }
+
+      calculate(false);
+      if (shouldPersist) persistState();
+    }
+
+    function switchMode(mode, shouldPersist = true) {
+      currentMode = mode === 'calcRisk' ? 'calcRisk' : 'calcShares';
+      const isShares = currentMode === 'calcShares';
+
+      el('tab-shares').classList.toggle('active', isShares);
+      el('tab-risk').classList.toggle('active', !isShares);
+      el('input-risk-amount').classList.toggle('hidden', !isShares);
+      el('input-shares-count').classList.toggle('hidden', isShares);
+      el('result-shares-section').classList.toggle('hidden', !isShares);
+      el('result-risk-section').classList.toggle('hidden', isShares);
+
+      calculate(false);
+      if (shouldPersist) persistState();
+    }
+
+    function setRisk(value) {
+      el('riskAmount').value = value;
+      calculate();
+    }
+
+    function clearInputs() {
+      for (const id of [
+        'entryPrice',
+        'stopLoss',
+        'riskAmount',
+        'sharesInput',
+        'noteInput'
+      ]) {
+        el(id).value = '';
+      }
+
+      updateNoteCount();
+      calculate();
+      setStatus('已清空輸入（含備註）');
+    }
+
+    function resetDisplay() {
+      const values = {
+        suggestedShares: '0',
+        totalCostA: '0.00',
+        actualRiskA: '0.00',
+        projectedLoss: '0.00',
+        totalCostB: '0.00',
+        stopLossPercentDisplay: '0.00%',
+        targetPrice1: '0.00',
+        targetPrice2: '0.00',
+        totalCostA_HKD: '',
+        actualRiskA_HKD: '',
+        projectedLoss_HKD: '',
+        totalCostB_HKD: ''
+      };
+
+      for (const [id, value] of Object.entries(values)) {
+        el(id).textContent = value;
+      }
+    }
+
+    function calculate(shouldPersist = true) {
+      resetDisplay();
+
+      const entry = safeNumber(el('entryPrice').value);
+      const stop = safeNumber(el('stopLoss').value);
+
+      if (entry <= 0 || stop <= 0 || entry === stop) {
+        if (shouldPersist) persistState();
+        return;
+      }
+
+      const diff = Math.abs(entry - stop);
+      const target1 = entry > stop ? entry + diff : entry - diff;
+      const target2 = entry > stop
+        ? entry + diff * 2
+        : entry - diff * 2;
+
+      el('stopLossPercentDisplay').textContent =
+        ((diff / entry) * 100).toFixed(2) + '%';
+
+      el('targetPrice1').textContent = target1.toFixed(2);
+      el('targetPrice2').textContent = target2.toFixed(2);
+
+      const cfg = getMarketConfig(currentMarket);
+
+      if (currentMode === 'calcShares') {
+        const riskHKD = safeNumber(el('riskAmount').value);
+
+        if (riskHKD > 0) {
+          const shares = Math.floor(riskHKD / (diff * cfg.rate));
+          const cost = shares * entry;
+          const actualRisk = shares * diff;
+
+          el('suggestedShares').textContent = shares.toLocaleString();
+          el('totalCostA').textContent =
+            formatMoney(cost, cfg.currency);
+          el('actualRiskA').textContent =
+            formatMoney(actualRisk, cfg.currency);
+
+          if (cfg.code !== 'hk') {
+            el('totalCostA_HKD').textContent =
+              '≈ ' + formatMoney(cost * cfg.rate, 'HK$');
+            el('actualRiskA_HKD').textContent =
+              '≈ ' + formatMoney(actualRisk * cfg.rate, 'HK$');
+          }
+        }
+      } else {
+        const shares = safeNumber(el('sharesInput').value);
+
+        if (Number.isInteger(shares) && shares > 0) {
+          const loss = shares * diff;
+          const cost = shares * entry;
+
+          el('projectedLoss').textContent =
+            formatMoney(loss, cfg.currency);
+          el('totalCostB').textContent =
+            formatMoney(cost, cfg.currency);
+
+          if (cfg.code !== 'hk') {
+            el('projectedLoss_HKD').textContent =
+              '≈ ' + formatMoney(loss * cfg.rate, 'HK$');
+            el('totalCostB_HKD').textContent =
+              '≈ ' + formatMoney(cost * cfg.rate, 'HK$');
+          }
+        }
+      }
+
+      if (shouldPersist) persistState();
+    }
+
+    function getCurrentSnapshot() {
+      const entry = safeNumber(el('entryPrice').value);
+      const stop = safeNumber(el('stopLoss').value);
+
+      if (entry <= 0 || stop <= 0 || entry === stop) {
+        return null;
+      }
+
+      const diff = Math.abs(entry - stop);
+      const cfg = getMarketConfig(currentMarket);
+
+      const base = {
+        type: 'stock',
+        entry,
+        stop,
+        diff,
+        stopLossPct: (diff / entry) * 100,
+        target1: entry > stop ? entry + diff : entry - diff,
+        target2: entry > stop
+          ? entry + diff * 2
+          : entry - diff * 2,
+        market: currentMarket,
+        mode: currentMode,
+        note: trimNote(el('noteInput').value),
+        fxRate: cfg.rate
+      };
+
+      if (currentMode === 'calcShares') {
+        const riskHKD = safeNumber(el('riskAmount').value);
+        if (riskHKD <= 0) return null;
+
+        const shares = Math.floor(riskHKD / (diff * cfg.rate));
+
+        return {
+          ...base,
+          riskAmountHKD: riskHKD,
+          suggestedShares: shares,
+          totalCost: shares * entry,
+          actualRisk: shares * diff,
+          displayCurrency: cfg.currency
+        };
+      }
+
+      const shares = safeNumber(el('sharesInput').value);
+
+      if (!Number.isInteger(shares) || shares <= 0) {
+        return null;
+      }
+
+      return {
+        ...base,
+        shares,
+        projectedLoss: shares * diff,
+        totalCost: shares * entry,
+        displayCurrency: cfg.currency
+      };
+    }
+
+    function saveCurrentRecord() {
+      if (mainView === 'futures') {
+        saveFuturesRecord();
+        return;
+      }
+
+      const snapshot = getCurrentSnapshot();
+
+      if (!snapshot) {
+        setStatus('請先輸入完整有效數值再儲存');
+        return;
+      }
+
+      const record = {
+        id: newId(),
+        ts: Date.now(),
+        ...snapshot
+      };
+
+      historyRecords.unshift(record);
+      renderHistory();
+      persistState();
+
+      setStatus(
+        record.note
+          ? '已儲存一筆紀錄（含備註）'
+          : '已儲存一筆紀錄'
+      );
+    }
+
+    function deleteHistory(id) {
+      historyRecords = historyRecords.filter(item => item.id !== id);
+      renderHistory();
+      persistState();
+      setStatus('已刪除紀錄');
+    }
+
+    function clearHistory() {
+      historyRecords = [];
+      renderHistory();
+      persistState();
+      setStatus('已清除全部紀錄');
+    }
+
+    function clearHistorySearch() {
+      historyKeyword = '';
+      el('historySearch').value = '';
+      renderHistory();
+      persistState();
+      setStatus('已清除搜尋條件');
+    }
+
+    function getMarketLabel(market) {
+      if (market === 'hk') return '港股 HK';
+      if (market === 'us') return '美股 US';
+      if (market === 'jp') return '日股 JP';
+      if (market === 'futures') return '期貨 Futures';
+      return '其他';
+    }
+
+    function getMarketClass(market) {
+      return ['hk', 'us', 'jp'].includes(market) ? market : '';
+    }
+
+    function recordMatchKeyword(item, keyword) {
+      if (!keyword) return true;
+
+      return [
+        item.note,
+        getMarketLabel(item.market),
+        item.instrumentName,
+        item.direction,
+        item.entry,
+        item.stop,
+        item.target1,
+        item.target2,
+        formatDateTime(item.ts)
+      ]
+        .map(value =>
+          String(value == null ? '' : value).toLowerCase()
+        )
+        .join(' ')
+        .includes(keyword);
+    }
+
+    function historyRiskHKD(item) {
+      if (!item || typeof item !== 'object') return 0;
+
+      if (item.type === 'futures' || item.market === 'futures') {
+        const risk = safeNumber(item.actualRisk);
+        return risk > 0 ? risk : 0;
+      }
+
+      const localRisk = safeNumber(
+        item.mode === 'calcShares'
+          ? item.actualRisk
+          : item.projectedLoss
+      );
+
+      if (localRisk <= 0) return 0;
+
+      let rate = 1;
+
+      if (item.market === 'us') {
+        rate = safeNumber(item.fxRate) > 0
+          ? safeNumber(item.fxRate)
+          : HKD_RATE;
+      } else if (item.market === 'jp') {
+        rate = safeNumber(item.fxRate) > 0
+          ? safeNumber(item.fxRate)
+          : DEFAULT_JPY_HKD_RATE;
+      }
+
+      return localRisk * rate;
+    }
+
+    function updateTotalTradeRisk() {
+      const total = historyRecords.reduce(
+        (sum, item) => sum + historyRiskHKD(item),
+        0
+      );
+
+      el('totalTradeRisk').textContent = formatMoney(total, 'HK$');
+    }
+
+    function renderHistory() {
+      updateTotalTradeRisk();
+
+      const keyword = historyKeyword.trim().toLowerCase();
+      const list = historyRecords.filter(
+        item => item && recordMatchKeyword(item, keyword)
+      );
+
+      if (!historyRecords.length) {
+        el('historyList').innerHTML =
+          '<div class="history-empty">暫無紀錄</div>';
+        return;
+      }
+
+      if (!list.length) {
+        el('historyList').innerHTML =
+          `<div class="history-empty">找不到符合「${escapeHtml(historyKeyword)}」的紀錄</div>`;
+        return;
+      }
+
+      el('historyList').innerHTML = list.map(item => {
+        const isFutures =
+          item.type === 'futures' ||
+          item.market === 'futures';
+
+        const note = trimNote(item.note);
+        const marketTag = getMarketLabel(item.market);
+        const marketClass = getMarketClass(item.market);
+        let body = '';
+
+        if (isFutures) {
+          const direction =
+            item.direction === 'short' ? '做空' : '做多';
+
+          body = `
+            <div class="history-kv">
+              商品：<strong>${escapeHtml(item.instrumentName || '-')}</strong>
+            </div>
+            <div class="history-kv">
+              方向：<strong>${direction}</strong>
+            </div>
+            <div class="history-kv">
+              進場 / 止損：
+              <strong>${safeNumber(item.entry).toFixed(1)} / ${safeNumber(item.stop).toFixed(1)}</strong>
+            </div>
+            <div class="history-kv">
+              止損點數：
+              <strong>${safeNumber(item.pointDiff).toFixed(1)} 點</strong>
+            </div>
+            <div class="history-kv">
+              建議手數：
+              <strong>${safeNumber(item.lots).toLocaleString()} 手</strong>
+            </div>
+            <div class="history-kv">
+              實際風險：
+              <strong>${formatMoney(item.actualRisk, 'HK$')}</strong>
+            </div>
+            <div class="history-kv">
+              目標 1:1 / 1:2：
+              <strong>${safeNumber(item.target1).toFixed(1)} / ${safeNumber(item.target2).toFixed(1)}</strong>
+            </div>
+            <div class="history-kv">
+              每手虧損：
+              <strong>${formatMoney(item.lossPerLot, 'HK$')}</strong>
+            </div>
+          `;
+        } else {
+          const direction =
+            safeNumber(item.entry) > safeNumber(item.stop)
+              ? '多單'
+              : '空單';
+
+          body = `
+            <div class="history-kv">
+              進場 / 止損：
+              <strong>${safeNumber(item.entry).toFixed(2)} / ${safeNumber(item.stop).toFixed(2)}</strong>
+            </div>
+            <div class="history-kv">
+              止損幅度：
+              <strong>${safeNumber(item.stopLossPct).toFixed(2)}%</strong>
+            </div>
+            <div class="history-kv">
+              目標價 1:1 / 1:2：
+              <strong>${safeNumber(item.target1).toFixed(2)} / ${safeNumber(item.target2).toFixed(2)}</strong>
+            </div>
+            <div class="history-kv">
+              方向：<strong>${direction}</strong>
+            </div>
+          `;
+
+          if (item.market === 'jp' && safeNumber(item.fxRate) > 0) {
+            body += `
+              <div class="history-kv">
+                匯率：
+                <strong>1 JPY = ${safeNumber(item.fxRate).toFixed(4)} HKD</strong>
+              </div>
+            `;
+          }
+
+          if (item.mode === 'calcShares') {
+            body += `
+              <div class="history-kv">
+                風險額 (HKD)：
+                <strong>${formatMoney(item.riskAmountHKD, 'HK$')}</strong>
+              </div>
+              <div class="history-kv">
+                建議股數：
+                <strong>${safeNumber(item.suggestedShares).toLocaleString()}</strong>
+              </div>
+              <div class="history-kv">
+                總成本：
+                <strong>${formatMoney(item.totalCost, item.displayCurrency || 'HK$')}</strong>
+              </div>
+              <div class="history-kv">
+                實際風險：
+                <strong>${formatMoney(item.actualRisk, item.displayCurrency || 'HK$')}</strong>
+              </div>
+            `;
+          } else {
+            body += `
+              <div class="history-kv">
+                持有股數：
+                <strong>${safeNumber(item.shares).toLocaleString()}</strong>
+              </div>
+              <div class="history-kv">
+                預計虧損：
+                <strong>${formatMoney(item.projectedLoss, item.displayCurrency || 'HK$')}</strong>
+              </div>
+              <div class="history-kv">
+                總成本：
+                <strong>${formatMoney(item.totalCost, item.displayCurrency || 'HK$')}</strong>
+              </div>
+            `;
+          }
+        }
+
+        if (note) {
+          body += `
+            <div class="history-kv full">
+              📝 <strong>${escapeHtml(note)}</strong>
+            </div>
+          `;
+        }
+
+        const modeTag = isFutures
+          ? '期貨計算'
+          : item.mode === 'calcShares'
+            ? '計算股數'
+            : '計算風險';
+
+        return `
+          <div class="history-item">
+            <div class="history-top">
+              <div class="history-time">${formatDateTime(item.ts)}</div>
+              <div>
+                <span class="tag ${marketClass}">${marketTag}</span>
+                <span class="tag">${modeTag}</span>
+                ${note ? '<span class="tag note">備註</span>' : ''}
+              </div>
+            </div>
+
+            <div class="history-grid">${body}</div>
+
+            <div class="history-actions">
+              <button
+                class="btn"
+                type="button"
+                onclick="openNoteModal('${item.id}')"
+              >
+                ${note ? '編輯備註' : '加備註'}
+              </button>
+              <button
+                class="btn danger-soft"
+                type="button"
+                onclick="deleteHistory('${item.id}')"
+              >
+                刪除
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openNoteModal(id) {
+      const item = historyRecords.find(record => record.id === id);
+      if (!item) return;
+
+      editingNoteId = id;
+      el('noteModalText').value = trimNote(item.note);
+      el('noteModalTip').textContent =
+        `紀錄時間：${formatDateTime(item.ts)}｜最多 ${NOTE_MAX} 字`;
+
+      el('noteModal').classList.add('show');
+      setTimeout(() => el('noteModalText').focus(), 50);
+    }
+
+    function closeNoteModal() {
+      el('noteModal').classList.remove('show');
+      editingNoteId = null;
+    }
+
+    function saveNoteModal() {
+      const item = historyRecords.find(
+        record => record.id === editingNoteId
+      );
+
+      if (!item) {
+        closeNoteModal();
+        return;
+      }
+
+      item.note = trimNote(el('noteModalText').value);
+
+      closeNoteModal();
+      renderHistory();
+      persistState();
+
+      setStatus(item.note ? '已更新備註' : '已清除該筆備註');
+    }
+
+    function deleteNoteModal() {
+      const item = historyRecords.find(
+        record => record.id === editingNoteId
+      );
+
+      if (item) item.note = '';
+
+      closeNoteModal();
+      renderHistory();
+      persistState();
+      setStatus('已清除該筆備註');
+    }
+
+    function getFuturesByMarket(market) {
+      return futuresInstruments.filter(item => item.market === market);
+    }
+
+    function ensureFuturesSelection() {
+      const list = getFuturesByMarket(futuresMarket);
+
+      if (!list.length) {
+        futuresInstrumentId = '';
+        return;
+      }
+
+      if (!list.some(item => item.id === futuresInstrumentId)) {
+        futuresInstrumentId = list[0].id;
+      }
+    }
+
+    function renderFuturesMarketButtons() {
+      el('f-market-hk').classList.toggle(
+        'active',
+        futuresMarket === 'hk'
+      );
+
+      el('f-market-us').classList.toggle(
+        'active',
+        futuresMarket === 'us'
+      );
+    }
+
+    function renderFuturesInstrumentButtons() {
+      const list = getFuturesByMarket(futuresMarket);
+
+      if (!list.length) {
+        el('f-instrument-row').innerHTML =
+          '<div class="history-empty" style="width:100%;">此市場暫無商品，請到參數設定新增</div>';
+        return;
+      }
+
+      el('f-instrument-row').innerHTML = list.map(item => `
+        <button
+          class="f-inst-btn ${item.id === futuresInstrumentId ? 'active' : ''}"
+          type="button"
+          onclick="selectFuturesInstrument('${item.id}')"
+        >
+          ${escapeHtml(item.name)}
+        </button>
+      `).join('');
+    }
+
+    function updateFuturesInstrumentDetail() {
+      const item = futuresInstruments.find(
+        inst => inst.id === futuresInstrumentId
+      );
+
+      if (!item) {
+        el('f-inst-detail').textContent =
+          '合約規格：- ｜ 匯率：-';
+        return;
+      }
+
+      el('f-inst-detail').textContent =
+        `合約規格：${item.contractSize}` +
+        ` ｜ 匯率：${item.currencyRate}` +
+        ` ｜ 幣別：${item.currencySymbol || 'HKD'}`;
+    }
+
+    function setFuturesMarket(market, shouldPersist = true) {
+      futuresMarket = market === 'us' ? 'us' : 'hk';
+
+      ensureFuturesSelection();
+      renderFuturesMarketButtons();
+      renderFuturesInstrumentButtons();
+      updateFuturesInstrumentDetail();
+      calculateFuturesRisk(false);
+
+      if (shouldPersist) persistState();
+    }
+
+    function selectFuturesInstrument(id, shouldPersist = true) {
+      const item = futuresInstruments.find(inst => inst.id === id);
+      if (!item) return;
+
+      futuresMarket = item.market;
+      futuresInstrumentId = id;
+
+      renderFuturesMarketButtons();
+      renderFuturesInstrumentButtons();
+      updateFuturesInstrumentDetail();
+      calculateFuturesRisk(false);
+
+      if (shouldPersist) persistState();
+    }
+
+    function setFuturesDirection(direction, shouldPersist = true) {
+      futuresDirection = direction === 'short' ? 'short' : 'long';
+      const isLong = futuresDirection === 'long';
+
+      el('f-long-btn').classList.toggle('active', isLong);
+      el('f-short-btn').classList.toggle('active', !isLong);
+      el('f-entry-label').textContent =
+        isLong ? '買入價 (Entry)' : '賣出價 (Entry)';
+
+      calculateFuturesRisk(false);
+      if (shouldPersist) persistState();
+    }
+
+    function calculateFuturesRisk(shouldPersist = true) {
+      const entry = safeNumber(el('f-entry').value);
+      const stop = safeNumber(el('f-stop').value);
+      const riskHKD = safeNumber(el('f-risk').value);
+
+      const inst = futuresInstruments.find(
+        item => item.id === futuresInstrumentId
+      );
+
+      lastFuturesResult = null;
+
+      let message = '';
+
+      if (entry <= 0 || stop <= 0 || riskHKD <= 0 || !inst) {
+        message = '輸入價格以查看期貨風險分析';
+      } else if (futuresDirection === 'long' && stop >= entry) {
+        message = '做多時，止損價必須低於入場價';
+      } else if (futuresDirection === 'short' && stop <= entry) {
+        message = '做空時，止損價必須高於入場價';
+      }
+
+      if (message) {
+        el('f-empty').textContent = message;
+        el('f-empty').classList.remove('hidden');
+        el('f-result').classList.add('hidden');
+
+        if (shouldPersist) persistState();
+        return;
+      }
+
+      const pointDiff = Math.abs(entry - stop);
+      const lossPerLot =
+        pointDiff * inst.contractSize * inst.currencyRate;
+
+      if (!Number.isFinite(lossPerLot) || lossPerLot <= 0) {
+        el('f-empty').textContent =
+          '商品參數無效，請檢查合約規格及匯率';
+        el('f-empty').classList.remove('hidden');
+        el('f-result').classList.add('hidden');
+
+        if (shouldPersist) persistState();
+        return;
+      }
+
+      const lots = Math.floor(riskHKD / lossPerLot);
+      const actualRisk = lots * lossPerLot;
+
+      const target1 = futuresDirection === 'long'
+        ? entry + pointDiff
+        : entry - pointDiff;
+
+      const target2 = futuresDirection === 'long'
+        ? entry + pointDiff * 2
+        : entry - pointDiff * 2;
+
+      el('f-lots').textContent = `${lots.toLocaleString()} 手`;
+      el('f-actual-risk').textContent =
+        formatMoney(actualRisk, 'HK$');
+      el('f-point-diff').textContent =
+        pointDiff.toFixed(1) + ' 點';
+      el('f-target1').textContent = target1.toFixed(1);
+      el('f-target2').textContent = target2.toFixed(1);
+
+      el('f-empty').classList.add('hidden');
+      el('f-result').classList.remove('hidden');
+
+      lastFuturesResult = {
+        instrumentId: inst.id,
+        instrumentName: inst.name,
+        futuresMarket: inst.market,
+        contractSize: inst.contractSize,
+        currencyRate: inst.currencyRate,
+        currencySymbol: inst.currencySymbol,
+        direction: futuresDirection,
+        entry,
+        stop,
+        pointDiff,
+        lossPerLot,
+        lots,
+        riskAmountHKD: riskHKD,
+        actualRisk,
+        target1,
+        target2
+      };
+
+      if (shouldPersist) persistState();
+    }
+
+    function saveFuturesRecord() {
+      if (!lastFuturesResult) {
+        setStatus('請先完成有效的期貨計算再儲存');
+        return;
+      }
+
+      const record = {
+        id: newId(),
+        ts: Date.now(),
+        type: 'futures',
+        market: 'futures',
+        mode: 'futures',
+        note: trimNote(el('f-note').value),
+        ...lastFuturesResult
+      };
+
+      historyRecords.unshift(record);
+      renderHistory();
+      persistState();
+
+      setStatus(
+        record.note
+          ? '已儲存期貨紀錄（含備註）'
+          : '已儲存期貨紀錄'
+      );
+    }
+
+    function toggleFuturesSettings() {
+      el('f-settings').classList.toggle('hidden');
+      renderFuturesSettingsList();
+      persistState();
+    }
+
+    function renderFuturesSettingsList() {
+      if (!futuresInstruments.length) {
+        el('f-settings-list').innerHTML =
+          '<div class="history-empty">暫無商品</div>';
+        return;
+      }
+
+      el('f-settings-list').innerHTML =
+        futuresInstruments.map(inst => {
+          if (futuresEditingId === inst.id) {
+            return `
+              <div class="f-inst-card">
+                <div class="input-group">
+                  <label>名稱</label>
+                  <input
+                    type="text"
+                    id="fi-name-${inst.id}"
+                    value="${escapeHtml(inst.name)}"
+                  />
+                </div>
+
+                <div class="input-group">
+                  <label>市場（hk / us）</label>
+                  <input
+                    type="text"
+                    id="fi-market-${inst.id}"
+                    value="${escapeHtml(inst.market)}"
+                  />
+                </div>
+
+                <div class="f-two">
+                  <div class="input-group">
+                    <label>合約規格</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="fi-size-${inst.id}"
+                      value="${inst.contractSize}"
+                    />
+                  </div>
+                  <div class="input-group">
+                    <label>匯率（換算 HKD）</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="fi-rate-${inst.id}"
+                      value="${inst.currencyRate}"
+                    />
+                  </div>
+                </div>
+
+                <div class="input-group">
+                  <label>幣別</label>
+                  <input
+                    type="text"
+                    id="fi-cur-${inst.id}"
+                    value="${escapeHtml(inst.currencySymbol || 'HKD')}"
+                  />
+                </div>
+
+                <div class="btn-row">
+                  <button
+                    class="btn"
+                    type="button"
+                    onclick="cancelEditFuturesInstrument()"
+                  >
+                    取消
+                  </button>
+                  <button
+                    class="btn primary"
+                    type="button"
+                    onclick="saveFuturesInstrument('${inst.id}')"
+                  >
+                    保存
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="f-inst-card">
+              <div><strong>${escapeHtml(inst.name)}</strong></div>
+
+              <div class="status" style="margin:4px 0 0;">
+                市場：${inst.market.toUpperCase()}
+                ｜ 規格：${inst.contractSize}
+                ｜ 匯率：${inst.currencyRate}
+                ｜ 幣別：${escapeHtml(inst.currencySymbol)}
+              </div>
+
+              <div class="btn-row">
+                <button
+                  class="btn"
+                  type="button"
+                  onclick="startEditFuturesInstrument('${inst.id}')"
+                >
+                  編輯
+                </button>
+                <button
+                  class="btn danger-soft"
+                  type="button"
+                  onclick="deleteFuturesInstrument('${inst.id}')"
+                >
+                  刪除
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+    }
+
+    function startEditFuturesInstrument(id) {
+      if (!futuresInstruments.some(item => item.id === id)) return;
+      futuresEditingId = id;
+      renderFuturesSettingsList();
+    }
+
+    function cancelEditFuturesInstrument() {
+      if (futuresEditingId && futuresEditingId.startsWith('new_')) {
+        futuresInstruments = futuresInstruments.filter(
+          item => item.id !== futuresEditingId
+        );
+      }
+
+      futuresEditingId = null;
+
+      if (!getFuturesByMarket(futuresMarket).length) {
+        futuresMarket = getFuturesByMarket('hk').length
+          ? 'hk'
+          : 'us';
+      }
+
+      ensureFuturesSelection();
+      renderFuturesMarketButtons();
+      renderFuturesInstrumentButtons();
+      updateFuturesInstrumentDetail();
+      renderFuturesSettingsList();
+      calculateFuturesRisk(false);
+      persistState();
+    }
+
+    function saveFuturesInstrument(id) {
+      const nameInput = el(`fi-name-${id}`);
+      const marketInput = el(`fi-market-${id}`);
+      const sizeInput = el(`fi-size-${id}`);
+      const rateInput = el(`fi-rate-${id}`);
+      const currencyInput = el(`fi-cur-${id}`);
+
+      if (
+        !nameInput ||
+        !marketInput ||
+        !sizeInput ||
+        !rateInput ||
+        !currencyInput
+      ) {
+        return;
+      }
+
+      const name = nameInput.value.trim();
+      const marketText = marketInput.value.trim().toLowerCase();
+      const contractSize = safeNumber(sizeInput.value);
+      const currencyRate = safeNumber(rateInput.value);
+      const currencySymbol = (currencyInput.value || 'HKD')
+        .trim()
+        .toUpperCase();
+
+      if (
+        !name ||
+        !['hk', 'us'].includes(marketText) ||
+        contractSize <= 0 ||
+        currencyRate <= 0
+      ) {
+        setStatus('請檢查商品名稱、市場（hk / us）、規格及匯率');
+        return;
+      }
+
+      const index = futuresInstruments.findIndex(
+        item => item.id === id
+      );
+
+      if (index < 0) return;
+
+      futuresInstruments[index] = {
+        ...futuresInstruments[index],
+        name,
+        market: marketText,
+        contractSize,
+        currencyRate,
+        currencySymbol
+      };
+
+      futuresEditingId = null;
+
+      if (!getFuturesByMarket(futuresMarket).length) {
+        futuresMarket = marketText;
+      }
+
+      ensureFuturesSelection();
+      renderFuturesMarketButtons();
+      renderFuturesInstrumentButtons();
+      updateFuturesInstrumentDetail();
+      renderFuturesSettingsList();
+      calculateFuturesRisk(false);
+      persistState();
+
+      setStatus('已保存期貨商品');
+    }
+
+    function addFuturesInstrument() {
+      const id = 'new_' + newId();
+
+      futuresInstruments.push({
+        id,
+        market: futuresMarket,
+        name: '新商品',
+        contractSize: 1,
+        currencyRate: 1,
+        currencySymbol: futuresMarket === 'hk' ? 'HKD' : 'USD'
+      });
+
+      futuresEditingId = id;
+
+      renderFuturesSettingsList();
+      ensureFuturesSelection();
+      renderFuturesInstrumentButtons();
+      updateFuturesInstrumentDetail();
+      persistState();
+    }
+
+    function deleteFuturesInstrument(id) {
+      if (futuresInstruments.length <= 1) {
+        setStatus('至少保留一個商品');
+        return;
+      }
+
+      futuresInstruments = futuresInstruments.filter(
+        item => item.id !== id
+      );
+
+      if (futuresEditingId === id) futuresEditingId = null;
+      if (futuresInstrumentId === id) futuresInstrumentId = '';
+
+      if (!getFuturesByMarket(futuresMarket).length) {
+        futuresMarket = getFuturesByMarket('hk').length
+          ? 'hk'
+          : 'us';
+      }
+
+      ensureFuturesSelection();
+      renderFuturesMarketButtons();
+      renderFuturesInstrumentButtons();
+      updateFuturesInstrumentDetail();
+      renderFuturesSettingsList();
+      calculateFuturesRisk(false);
+      persistState();
+
+      setStatus('已刪除期貨商品');
+    }
+
+    for (const id of [
+      'entryPrice',
+      'stopLoss',
+      'riskAmount',
+      'sharesInput',
+      'jpRate'
+    ]) {
+      el(id).addEventListener('input', () => calculate(true));
+    }
+
+    el('noteInput').addEventListener('input', () => {
+      el('noteInput').value =
+        el('noteInput').value.slice(0, NOTE_MAX);
+      updateNoteCount();
+      persistState();
+    });
+
+    for (const id of ['f-entry', 'f-stop', 'f-risk']) {
+      el(id).addEventListener(
+        'input',
+        () => calculateFuturesRisk(true)
+      );
+    }
+
+    el('f-note').addEventListener('input', () => {
+      el('f-note').value =
+        el('f-note').value.slice(0, NOTE_MAX);
+      updateNoteCount();
+      persistState();
+    });
+
+    el('historySearch').addEventListener('input', event => {
+      historyKeyword = event.target.value;
+      renderHistory();
+      persistState();
+    });
+
+    el('f-market-hk').addEventListener(
+      'click',
+      () => setFuturesMarket('hk')
+    );
+
+    el('f-market-us').addEventListener(
+      'click',
+      () => setFuturesMarket('us')
+    );
+
+    el('f-long-btn').addEventListener(
+      'click',
+      () => setFuturesDirection('long')
+    );
+
+    el('f-short-btn').addEventListener(
+      'click',
+      () => setFuturesDirection('short')
+    );
+
+    el('f-toggle-settings-btn').addEventListener(
+      'click',
+      toggleFuturesSettings
+    );
+
+    el('f-add-instrument-btn').addEventListener(
+      'click',
+      addFuturesInstrument
+    );
+
+    el('f-save-btn').addEventListener(
+      'click',
+      saveFuturesRecord
+    );
+
+    el('noteModal').addEventListener('click', event => {
+      if (event.target === el('noteModal')) {
+        closeNoteModal();
+      }
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeNoteModal();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        persistState();
+      }
+    });
+
+    window.addEventListener('pagehide', persistState);
+    window.addEventListener('beforeunload', persistState);
+
+    function init() {
+      storageUsable = testLocalStorageUsable();
+
+      switchMarket('hk', false);
+      switchMode('calcShares', false);
+      setFuturesMarket('hk', false);
+      setFuturesDirection('long', false);
+
+      if (!storageUsable) {
+        setStatus('⚠️ localStorage 不可用，本機資料無法自動儲存');
+      } else {
+        const saved = loadState();
+
+        if (saved) {
+          historyRecords = normalizeHistory(saved.history);
+
+          const savedInstruments = normalizeInstruments(
+            saved.futuresInstruments
+          );
+
+          if (savedInstruments) {
+            futuresInstruments = savedInstruments;
+          }
+
+          applyDraft(saved.draft || {});
+          setStatus('已載入本機儲存資料');
+        } else {
+          setStatus('準備完成（尚未有本機資料）');
+        }
+      }
+
+      ensureFuturesSelection();
+      renderFuturesMarketButtons();
+      renderFuturesInstrumentButtons();
+      updateFuturesInstrumentDetail();
+      renderFuturesSettingsList();
+
+      renderHistory();
+      calculate(false);
+      calculateFuturesRisk(false);
+      updateNoteCount();
+
+      if (storageUsable) persistState();
+    }
+
+    init();
+  </script>
+</body>
+</html>
